@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>ロボット イライラ棒</title>
-<script src="qrcode.js?v=20261105b"></script>
+<script src="qrcode.js?v=20261105c"></script>
 <style>
   :root { --bg:#0d1017; --panel:#191e2c; --accent:#ffcc33; --danger:#ff3b3b; --ok:#3ee88a; --text:#f2f5ff; }
   * { box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
@@ -63,7 +63,7 @@
   <div id="hud">
     <div id="hNo">No.-</div>
     <div id="hTime">0.00</div>
-    <div id="hRight"><span id="hMsg"></span><button id="gear" aria-label="設定">⚙︎<span style="font-size:10px;vertical-align:middle;margin-left:2px">b</span></button></div>
+    <div id="hRight"><span id="hMsg"></span><button id="gear" aria-label="設定">⚙︎</button></div>
   </div>
   <div id="area">
     <canvas id="cv"></canvas>
@@ -72,7 +72,7 @@
 
     <div class="ov hidden" id="settings">
       <div class="card">
-        <h2><span>⚙︎ 設定（スタッフ用）<small style="font-size:12px;opacity:.6;margin-left:8px">ver 11/05b</small></span><button id="sX">✕ 閉じる</button></h2>
+        <h2><span>⚙︎ 設定（スタッフ用）<small style="font-size:12px;opacity:.6;margin-left:8px">ver 11/05c</small></span><button id="sX">✕ 閉じる</button></h2>
         <div class="set"><span>通路の幅</span><input type="range" id="sW" min="16" max="80" step="2"><b id="sWv"></b></div>
         <div class="set"><span>折り返し数</span><input type="range" id="sN" min="2" max="8" step="1"><b id="sNv"></b></div>
         <div class="set"><span>ペン浮き猶予</span><input type="range" id="sG" min="0" max="600" step="50"><b id="sGv"></b></div>
