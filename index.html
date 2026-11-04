@@ -16,63 +16,42 @@
     background:var(--panel); flex:0 0 auto; font-weight:800; }
   #hNo { font-size:clamp(20px,3.4vw,34px); min-width:5em; }
   #hTime { font-size:clamp(30px,5.6vw,56px); font-variant-numeric:tabular-nums; letter-spacing:1px; }
-  #hRight { display:flex; align-items:center; gap:14px; font-size:clamp(18px,3vw,30px); min-width:5em; justify-content:flex-end; }
-  #hMsg { color:var(--accent); font-variant-numeric:tabular-nums; }
+  #hRight { display:flex; align-items:center; gap:12px; font-size:clamp(15px,2.4vw,26px); min-width:5em; justify-content:flex-end; }
+  #hMsg { color:var(--accent); font-variant-numeric:tabular-nums; white-space:nowrap; }
   #gear { background:none; border:none; color:#8a93ad; font-size:26px; padding:4px 6px; cursor:pointer; }
   #area { flex:1 1 auto; position:relative; touch-action:none; }
   canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; display:block; }
-
   .ov { position:absolute; inset:0; z-index:5; display:flex; align-items:center; justify-content:center; }
   .hidden { display:none !important; }
 
-  /* START画面 */
-  #idle { background:rgba(8,10,16,.72); gap:5vw; padding:20px; }
-  #idleMain { display:flex; flex-direction:column; align-items:center; gap:14px; }
-  #startBtn { width:min(34vw,300px); height:min(34vw,300px); border-radius:50%; border:none;
-    background:radial-gradient(circle at 35% 30%, #7dffb4, #19c26a 60%, #0f8a4a); color:#062814;
-    font-size:min(8vw,64px); font-weight:900; letter-spacing:2px; font-family:inherit; cursor:pointer;
-    box-shadow:0 0 0 10px rgba(62,232,138,.18), 0 0 60px rgba(62,232,138,.5); animation:pulse 1.6s infinite; }
-  #startBtn:active { transform:scale(.96); }
-  #startBtn:disabled { filter:grayscale(1) brightness(.6); animation:none; }
-  @keyframes pulse { 50% { box-shadow:0 0 0 22px rgba(62,232,138,.06), 0 0 80px rgba(62,232,138,.7); } }
-  #nextNo { font-size:clamp(20px,3vw,32px); font-weight:800; }
-  #rank { background:rgba(25,30,44,.92); border-radius:16px; padding:14px 18px; min-width:min(36vw,330px); }
-  #rank h3 { margin:0 0 8px; font-size:20px; color:var(--accent); text-align:center; }
-  #rank ol { margin:0; padding:0; list-style:none; font-size:clamp(14px,1.9vw,19px); font-variant-numeric:tabular-nums; }
-  #rank li { display:flex; justify-content:space-between; gap:10px; padding:3px 4px; border-bottom:1px solid #2a3147; }
-  #rank li .r { width:2.2em; color:#aab3cc; }
-  #rank li .n { flex:1; }
-  #rank li.me { background:rgba(255,204,51,.18); border-radius:6px; }
-  #rank .empty { text-align:center; opacity:.6; padding:10px; }
-  #stats { text-align:center; font-size:14px; opacity:.75; margin-top:8px; }
-
-  /* 結果 */
   #result { pointer-events:none; flex-direction:column; text-align:center; }
   #result.out { background:rgba(255,30,30,.6); }
   #result.win { background:rgba(30,200,110,.55); }
   #rBig { font-size:min(17vw,150px); font-weight:900; line-height:1; color:#fff; text-shadow:0 4px 0 #000, 0 0 30px rgba(0,0,0,.6); }
   #rSub { font-size:min(6vw,48px); font-weight:800; color:#fff; margin-top:14px; text-shadow:0 3px 0 #000; }
   #rRank { font-size:min(4.5vw,36px); font-weight:800; color:#fff; margin-top:10px; text-shadow:0 2px 0 #000; }
+  #flash { pointer-events:none; background:rgba(255,30,30,.55); font-size:min(14vw,120px); font-weight:900; color:#fff; text-shadow:0 4px 0 #000; }
 
-  /* 一時フラッシュ（続行モードのミス） */
-  #flash { pointer-events:none; background:rgba(255,30,30,.55); font-size:min(14vw,120px); font-weight:900;
-    color:#fff; text-shadow:0 4px 0 #000; }
-
-  /* 設定 */
-  #settings { background:rgba(8,10,16,.9); padding:16px; }
-  .card { background:var(--panel); border-radius:16px; padding:20px 24px; width:100%; max-width:600px; max-height:100%; overflow:auto; }
+  #settings { background:rgba(8,10,16,.92); padding:16px; }
+  .card { background:var(--panel); border-radius:16px; padding:20px 24px; width:100%; max-width:640px; max-height:100%; overflow:auto; }
   .card h2 { margin:0 0 12px; font-size:22px; }
+  .card h3 { margin:18px 0 6px; font-size:18px; color:var(--accent); }
   .set { display:flex; align-items:center; gap:10px; margin:10px 0; font-size:16px; }
   .set span { width:120px; flex:0 0 auto; }
   .set input[type=range] { flex:1; }
   .set b { width:80px; text-align:right; }
   .set select { flex:1; font-size:16px; padding:6px; border-radius:8px; }
   label.chk { display:block; margin:8px 0; font-size:16px; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
   .btn { background:var(--accent); color:#222; border:none; border-radius:10px; padding:12px 20px; font-size:17px; font-weight:800; font-family:inherit; cursor:pointer; }
   .btn.sub { background:#353d58; color:var(--text); }
   .btn.warn { background:#7a2a2a; color:#fff; }
-  .note { font-size:13px; opacity:.7; }
+  .note { font-size:13px; opacity:.7; line-height:1.5; }
+  #shareBox { display:flex; gap:16px; align-items:center; background:#11151f; border-radius:12px; padding:12px; }
+  #qr { background:#fff; padding:8px; border-radius:8px; width:156px; height:156px; flex:0 0 auto; }
+  #qr img, #qr canvas { width:140px !important; height:140px !important; }
+  #rankUrl { font-size:13px; word-break:break-all; -webkit-user-select:text; user-select:text; }
+  #shareStat { font-size:14px; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -84,15 +63,6 @@
   </div>
   <div id="area">
     <canvas id="cv"></canvas>
-
-    <div class="ov" id="idle">
-      <div id="idleMain">
-        <button id="startBtn">START</button>
-        <div id="nextNo">次の挑戦者 No.1</div>
-      </div>
-      <div id="rank"><h3>🏆 ランキング</h3><ol id="rankList"></ol><div id="stats"></div></div>
-    </div>
-
     <div class="ov hidden" id="result"><div id="rBig"></div><div id="rSub"></div><div id="rRank"></div></div>
     <div class="ov hidden" id="flash">ミス！</div>
 
@@ -113,12 +83,30 @@
         <label class="chk"><input type="checkbox" id="sPen"> Apple Pencilのみ受け付ける（指・手は無視）</label>
         <label class="chk"><input type="checkbox" id="sGuide"> 中央ガイド線を表示</label>
         <label class="chk"><input type="checkbox" id="sSound"> 効果音</label>
-        <p class="note">※コースを変えても記録は残ります。公平に比べたいときは、イベント中にコースを変えないでください。</p>
+
+        <h3>📺 ランキングを別のタブレットに表示</h3>
+        <label class="chk"><input type="checkbox" id="sShare"> 結果をランキング画面に送る</label>
+        <div id="shareBox">
+          <div id="qr"></div>
+          <div>
+            <div class="note">別のタブレットでこのQRを読み取るか、下のURLを開いてください。</div>
+            <div id="rankUrl"></div>
+            <div id="shareStat"></div>
+          </div>
+        </div>
         <div class="row">
-          <button class="btn" id="sClose">閉じる</button>
+          <button class="btn sub" id="sTest">テスト送信</button>
+          <button class="btn sub" id="sRoom">部屋コードを作り直す</button>
+        </div>
+        <p class="note">※記録の送受信には無料の中継サービス ntfy.sh を使います。送るのは挑戦番号・タイム・到達率だけです。学校のネットワークで ntfy.sh がブロックされていると届きません。</p>
+
+        <h3>記録</h3>
+        <div class="row">
           <button class="btn sub" id="sCopy">全記録をCSVでコピー</button>
           <button class="btn warn" id="sReset">記録をリセット</button>
         </div>
+        <p class="note">※コースを変えても記録は残ります。公平に比べたいときは、イベント中にコースを変えないでください。</p>
+        <div class="row"><button class="btn" id="sClose">閉じる</button></div>
       </div>
     </div>
   </div>
@@ -126,29 +114,33 @@
 
 <script>
 (() => {
-  const W = 800, H = 500, START_R = 28, GOAL_R = 28;
+  const W = 800, H = 500, START_R = 58, GOAL_R = 40;
   const $ = id => document.getElementById(id);
+  const RELAY = "https://ntfy.sh/";
 
-  // ---------- 保存（使えなくても動く） ----------
+  // ---------- 保存 ----------
   const store = {
     get(k, d) { try { const v = localStorage.getItem("irb_" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem("irb_" + k, JSON.stringify(v)); } catch (e) {} }
   };
-  const cfg = Object.assign({ w:36, n:4, g:150, limit:0, mode:"end", show:5, pen:true, guide:false, sound:true }, store.get("cfg", {}));
-  let records = store.get("records", []);   // {no, ok, time, prog, miss, w, n, at}
+  const newRoom = () => "irb-" + Array.from(crypto.getRandomValues(new Uint8Array(9)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
+  const cfg = Object.assign({ w:36, n:4, g:150, limit:0, mode:"end", show:5, pen:true, guide:false, sound:true, share:true, room:"" }, store.get("cfg", {}));
+  if (!cfg.room) { cfg.room = newRoom(); store.set("cfg", cfg); }
+  let records = store.get("records", []);
   let nextNo = store.get("nextNo", 1);
 
-  // ---------- コース ----------
+  // ---------- コース：大きなSTART円 → ジグザグ → GOAL ----------
   function makeZig(n, w) {
-    const top = 60, bot = 440, xa = 170, xb = 630, sp = (xb - xa) / (n - 1);
+    const top = 60, bot = 440, mid = 250, xa = 200, xb = 640, sp = (xb - xa) / (n - 1);
     w = Math.min(w, sp - 26);
-    const path = [[60, top]]; let y = top;
-    for (let i = 0; i < n; i++) { const x = xa + sp * i; path.push([x, y]); y = y === top ? bot : top; path.push([x, y]); }
+    const path = [[80, mid], [xa, mid], [xa, top]]; let y = top;
+    for (let i = 1; i < n; i++) { const x = xa + sp * i; path.push([x, y]); y = y === top ? bot : top; path.push([x, y]); }
     path.push([740, y]);
     let len = 0; for (let i = 0; i < path.length - 1; i++) len += Math.hypot(path[i+1][0]-path[i][0], path[i+1][1]-path[i][1]);
     return { width: w, path, n, len };
   }
   let course = makeZig(cfg.n, cfg.w);
+  const S = () => course.path[0], G = () => course.path[course.path.length - 1];
 
   function distSeg(px, py, ax, ay, bx, by) {
     const dx = bx-ax, dy = by-ay, l2 = dx*dx + dy*dy;
@@ -171,6 +163,7 @@
     }
     return at / course.len;
   }
+  const inStart = (x, y) => Math.hypot(x - S()[0], y - S()[1]) <= START_R;
 
   // ---------- 画面サイズ ----------
   const cv = $("cv"), ctx = cv.getContext("2d"), area = $("area");
@@ -190,6 +183,7 @@
     if (!cfg.sound) return;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
       const o = actx.createOscillator(), g = actx.createGain();
       o.type = type; o.frequency.value = f;
       g.gain.setValueAtTime(vol, actx.currentTime); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + dur);
@@ -200,66 +194,80 @@
   const fanfare = () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, .2, "triangle", .2), i * 120));
 
   // ---------- 状態 ----------
-  // idle: START待ち / wait: 計測中・ペンをSTART円に置くのを待つ / play: なぞり中 / miss: 続行モードのミス演出 / result: 結果表示
-  let state = "idle", curNo = 0, tStart = 0, elapsed = 0, maxProg = 0, miss = 0;
-  let pen = null, trail = [], activeId = null, liftTimer = null, hitPos = null, hitAt = 0, lastRecNo = null;
-
+  // idle: START待ち / play: なぞり中 / miss: 続行モードのミス演出 / wait: 続行モードでSTARTに戻るのを待つ / result: 結果表示
+  let state = "idle", curNo = 0, tStart = 0, elapsed = 0, maxProg = 0, miss = 0, lockUntil = 0;
+  let pen = null, trail = [], activeId = null, liftTimer = null, hitPos = null, hitAt = 0, lastRec = null;
   const hTime = $("hTime"), hMsg = $("hMsg");
   function msg(s, c) { hMsg.textContent = s; hMsg.style.color = c || "var(--accent)"; }
 
-  // ---------- ランキング ----------
   function cmp(a, b) {
     if (a.ok !== b.ok) return a.ok ? -1 : 1;
     if (a.ok) return a.time - b.time;
     if (b.prog !== a.prog) return b.prog - a.prog;
     return a.time - b.time;
   }
-  function rankOf(rec) { return records.slice().sort(cmp).indexOf(rec) + 1; }
-  function renderIdle() {
-    $("nextNo").textContent = `次の挑戦者 No.${nextNo}`;
-    $("hNo").textContent = `No.${nextNo}`;
-    const sorted = records.slice().sort(cmp).slice(0, 10);
-    $("rankList").innerHTML = sorted.length ? sorted.map((r, i) =>
-      `<li class="${r.no === lastRecNo ? "me" : ""}"><span class="r">${i+1}位</span><span class="n">No.${r.no}</span>` +
-      `<span>${r.ok ? r.time.toFixed(2) + "秒" : "到達" + r.prog + "%"}</span></li>`).join("")
-      : `<div class="empty">まだ挑戦者はいません</div>`;
-    const clears = records.filter(r => r.ok).length;
-    $("stats").textContent = records.length ? `挑戦 ${records.length}人 / クリア ${clears}人` : "";
+  const rankOf = rec => records.slice().sort(cmp).indexOf(rec) + 1;
+
+  // ---------- ランキング画面へ送信 ----------
+  let shareOk = null;
+  function publish() {
+    if (!cfg.share) return;
+    const sorted = records.slice().sort(cmp);
+    const body = JSON.stringify({
+      v: 1, state, no: state === "idle" ? nextNo : curNo, limit: cfg.limit,
+      top: sorted.slice(0, 10).map(r => ({ no: r.no, ok: r.ok, time: r.time, prog: r.prog })),
+      total: records.length, clears: records.filter(r => r.ok).length,
+      last: lastRec ? { no: lastRec.no, ok: lastRec.ok, time: lastRec.time, prog: lastRec.prog, why: lastRec.why, rank: rankOf(lastRec) } : null
+    });
+    fetch(RELAY + cfg.room, { method: "POST", body })
+      .then(r => { shareOk = r.ok; updShareStat(); })
+      .catch(() => { shareOk = false; updShareStat(); });
+  }
+  function updShareStat() {
+    const el = $("shareStat"); if (!el) return;
+    el.textContent = !cfg.share ? "送信オフ" : shareOk === null ? "まだ送信していません" : shareOk ? "✅ 送信できています" : "⚠️ 送信できません（ネットワークを確認）";
   }
 
   // ---------- 進行 ----------
   function showIdle() {
-    state = "idle"; pen = null; trail = []; activeId = null; hitPos = null;
+    state = "idle"; pen = null; trail = []; hitPos = null; maxProg = 0;
     clearTimeout(liftTimer); liftTimer = null;
-    $("result").classList.add("hidden"); $("idle").classList.remove("hidden");
-    hTime.textContent = "0.00"; msg("");
-    renderIdle();
-    const b = $("startBtn"); b.disabled = true; setTimeout(() => b.disabled = false, 800); // 連打防止
+    $("result").classList.add("hidden");
+    hTime.textContent = cfg.limit ? cfg.limit.toFixed(2) : "0.00";
+    $("hNo").textContent = `No.${nextNo}`;
+    msg(lastRec ? `前回 No.${lastRec.no}：${lastRec.ok ? lastRec.time.toFixed(2) + "秒" : "到達" + lastRec.prog + "%"}　${rankOf(lastRec)}位` : "STARTにペンを置いてね", "#aab3cc");
+    lockUntil = performance.now() + 1000;   // 直後の誤スタート防止
+    publish();
   }
-  function startChallenge() {
-    if (state !== "idle") return;
+  function begin(x, y, id) {
     curNo = nextNo; nextNo++; store.set("nextNo", nextNo);
-    $("idle").classList.add("hidden");
     $("hNo").textContent = `No.${curNo}`;
-    state = "wait"; tStart = performance.now(); elapsed = 0; maxProg = 0; miss = 0; pen = null; trail = [];
-    msg("STARTへ！"); beep(880, .12, "triangle", .2);
+    tStart = performance.now(); elapsed = 0; maxProg = 0; miss = 0;
+    grab(x, y, id);
+    beep(880, .12, "triangle", .2);
+    publish();
+  }
+  function grab(x, y, id) {
+    activeId = id; try { cv.setPointerCapture(id); } catch (_) {}
+    state = "play"; pen = [x, y]; trail = [pen]; hitPos = null; msg("");
   }
   function finish(ok, why) {
     clearTimeout(liftTimer); liftTimer = null;
     elapsed = (performance.now() - tStart) / 1000;
+    if (cfg.limit && !ok && why === "時間切れ") elapsed = cfg.limit;
     hTime.textContent = elapsed.toFixed(2);
     state = "result";
     if (ok) maxProg = 1;
     const rec = { no: curNo, ok, time: +elapsed.toFixed(2), prog: Math.round(maxProg * 100), miss,
       why: ok ? "" : why, w: Math.round(course.width), n: course.n, at: new Date().toLocaleString("ja-JP") };
-    records.push(rec); store.set("records", records); lastRecNo = rec.no;
-    const rank = rankOf(rec), best = rank === 1;
-    const r = $("result");
-    r.className = "ov " + (ok ? "win" : "out");
+    records.push(rec); store.set("records", records); lastRec = rec;
+    const rank = rankOf(rec);
+    $("result").className = "ov " + (ok ? "win" : "out");
     $("rBig").textContent = ok ? "CLEAR!" : (why === "時間切れ" ? "TIME UP" : "OUT");
     $("rSub").textContent = ok ? `${elapsed.toFixed(2)} 秒${miss ? `（ミス${miss}回）` : ""}` : `${why}　到達 ${rec.prog}%`;
-    $("rRank").textContent = `No.${curNo}　${records.length}人中 ${rank}位${best && records.length > 1 ? "　🏆トップ！" : ""}`;
+    $("rRank").textContent = `No.${curNo}　${records.length}人中 ${rank}位${rank === 1 && records.length > 1 ? "　🏆トップ！" : ""}`;
     if (ok) { fanfare(); msg("CLEAR!", "var(--ok)"); } else { buzz(); msg(why, "var(--danger)"); }
+    publish();
     setTimeout(showIdle, cfg.show * 1000);
   }
   function hit(x, y, why) {
@@ -273,10 +281,9 @@
   }
 
   function checkPoint(x, y) {
-    if (distPath(x, y) > course.width / 2) { hit(x, y, "壁に当たった"); return false; }
+    if (!inStart(x, y) && distPath(x, y) > course.width / 2) { hit(x, y, "壁に当たった"); return false; }
     const pr = progressAt(x, y); if (pr > maxProg) maxProg = pr;
-    const g = course.path[course.path.length - 1];
-    if (Math.hypot(x - g[0], y - g[1]) < GOAL_R * .8) { finish(true); return false; }
+    if (Math.hypot(x - G()[0], y - G()[1]) < GOAL_R * .7) { finish(true); return false; }
     return true;
   }
   function moveTo(x, y) {
@@ -296,17 +303,14 @@
     e.preventDefault();
     if (!accept(e) || activeId !== null) return;
     const [x, y] = toL(e);
-    if (state === "play" && liftTimer) {          // 猶予内にペンが戻った
+    if (state === "play" && liftTimer) {           // 猶予内にペンが戻った
       clearTimeout(liftTimer); liftTimer = null; activeId = e.pointerId;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       moveTo(x, y); return;
     }
-    if (state !== "wait") return;
-    const s = course.path[0];
-    if (Math.hypot(x - s[0], y - s[1]) <= START_R) {
-      activeId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-      state = "play"; pen = [x, y]; trail = [pen]; hitPos = null; msg(""); beep(660, .08, "triangle", .15);
-    } else msg("緑のSTARTから");
+    if (!inStart(x, y)) return;
+    if (state === "idle" && performance.now() > lockUntil) begin(x, y, e.pointerId);   // ← START円に触れた瞬間に計測開始
+    else if (state === "wait") grab(x, y, e.pointerId);                                 // 続行モードの再開
   }, { passive: false });
 
   cv.addEventListener("pointermove", e => {
@@ -331,13 +335,15 @@
   document.addEventListener("gesturestart", e => e.preventDefault());
   document.addEventListener("dblclick", e => e.preventDefault());
 
-  $("startBtn").addEventListener("click", startChallenge);
-
   // ---------- 設定 ----------
-  const sW = $("sW"), sN = $("sN"), sG = $("sG"), sL = $("sL"), sM = $("sM"), sR = $("sR"), sPen = $("sPen"), sGuide = $("sGuide"), sSound = $("sSound");
+  const F = id => $(id);
+  const sW = F("sW"), sN = F("sN"), sG = F("sG"), sL = F("sL"), sM = F("sM"), sR = F("sR"),
+        sPen = F("sPen"), sGuide = F("sGuide"), sSound = F("sSound"), sShare = F("sShare");
+  const rankURL = () => new URL("ranking.html?room=" + cfg.room, location.href).href;
   function loadForm() {
     sW.value = cfg.w; sN.value = cfg.n; sG.value = cfg.g; sL.value = cfg.limit; sM.value = cfg.mode; sR.value = cfg.show;
-    sPen.checked = cfg.pen; sGuide.checked = cfg.guide; sSound.checked = cfg.sound; labels();
+    sPen.checked = cfg.pen; sGuide.checked = cfg.guide; sSound.checked = cfg.sound; sShare.checked = cfg.share;
+    labels(); showShare();
   }
   function labels() {
     const eff = makeZig(+sN.value, +sW.value).width;
@@ -347,12 +353,33 @@
   }
   function saveForm() {
     Object.assign(cfg, { w:+sW.value, n:+sN.value, g:+sG.value, limit:+sL.value, mode:sM.value, show:+sR.value,
-      pen:sPen.checked, guide:sGuide.checked, sound:sSound.checked });
-    store.set("cfg", cfg); course = makeZig(cfg.n, cfg.w); labels();
+      pen:sPen.checked, guide:sGuide.checked, sound:sSound.checked, share:sShare.checked });
+    store.set("cfg", cfg); course = makeZig(cfg.n, cfg.w); labels(); updShareStat();
   }
-  [sW, sN, sG, sL, sM, sR, sPen, sGuide, sSound].forEach(el => el.addEventListener("input", saveForm));
+  [sW, sN, sG, sL, sM, sR, sPen, sGuide, sSound, sShare].forEach(el => el.addEventListener("input", saveForm));
+
+  let qrLoading = false;
+  function showShare() {
+    const url = rankURL();
+    $("rankUrl").textContent = url; updShareStat();
+    const draw = () => { const q = $("qr"); q.innerHTML = ""; try { new QRCode(q, { text: url, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M }); } catch (e) { q.textContent = "QR表示不可"; } };
+    if (window.QRCode) return draw();
+    if (qrLoading) return; qrLoading = true;
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+    s.onload = draw; s.onerror = () => { $("qr").textContent = "QRを読み込めません。URLを使ってください"; };
+    document.head.appendChild(s);
+  }
   $("gear").onclick = () => { if (state !== "idle") return; loadForm(); $("settings").classList.remove("hidden"); };
-  $("sClose").onclick = () => { $("settings").classList.add("hidden"); renderIdle(); };
+  $("sClose").onclick = () => { $("settings").classList.add("hidden"); showIdle(); };
+  $("sTest").onclick = () => { shareOk = null; $("shareStat").textContent = "送信中…"; const keep = cfg.share; cfg.share = true; publish(); cfg.share = keep; };
+  let roomArm = false;
+  $("sRoom").onclick = () => {
+    const b = $("sRoom");
+    if (!roomArm) { roomArm = true; b.textContent = "もう一度押すと変更（QRも変わります）"; setTimeout(() => { roomArm = false; b.textContent = "部屋コードを作り直す"; }, 3000); return; }
+    roomArm = false; b.textContent = "部屋コードを作り直す";
+    cfg.room = newRoom(); store.set("cfg", cfg); shareOk = null; showShare();
+  };
   $("sCopy").onclick = async () => {
     const csv = "挑戦No,結果,タイム秒,到達%,ミス回数,理由,通路幅,折り返し,日時\n" +
       records.map(r => [r.no, r.ok ? "CLEAR" : "OUT", r.time, r.prog, r.miss, r.why, r.w, r.n, r.at].join(",")).join("\n");
@@ -364,7 +391,7 @@
   $("sReset").onclick = () => {
     const b = $("sReset");
     if (!armed) { armed = true; b.textContent = "もう一度押すと全消去"; setTimeout(() => { armed = false; b.textContent = "記録をリセット"; }, 3000); return; }
-    records = []; nextNo = 1; lastRecNo = null; store.set("records", records); store.set("nextNo", 1);
+    records = []; nextNo = 1; lastRec = null; store.set("records", records); store.set("nextNo", 1);
     armed = false; b.textContent = "リセットしました"; setTimeout(() => b.textContent = "記録をリセット", 1500);
   };
 
@@ -374,6 +401,7 @@
     for (let i = 1; i < path.length; i++) ctx.lineTo(path[i][0], path[i][1]);
     ctx.lineWidth = w; ctx.strokeStyle = color; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
   }
+  function circle(x, y, r, fill) { ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
   function draw(now) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = "#0d1017"; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -386,11 +414,12 @@
     for (let x = -H; x < W; x += 28) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + H, H); ctx.stroke(); }
     ctx.restore();
 
+    const s = S(), g = G();
+    // 通路（START円の縁も壁色で囲う）
+    circle(s[0], s[1], START_R + 5, "#ff2a2a");
     stroke(course.path, course.width + 10, "#ff2a2a");
     stroke(course.path, course.width, "#f4f4f0");
     if (cfg.guide) { ctx.setLineDash([10, 8]); stroke(course.path, 2, "#7a8aa0"); ctx.setLineDash([]); }
-
-    // 到達済みの部分
     if (maxProg > 0 && state !== "idle") {
       let need = maxProg * course.len; const done = [course.path[0]];
       for (let i = 0; i < course.path.length - 1 && need > 0; i++) {
@@ -400,22 +429,26 @@
       stroke(done, course.width * .5, "rgba(80,200,255,.28)");
     }
 
-    const s = course.path[0], g = course.path[course.path.length - 1];
-    const pulse = .55 + .45 * Math.sin(now / 200);
-    ctx.fillStyle = `rgba(62,232,138,${state === "wait" ? pulse : .75})`;
-    ctx.beginPath(); ctx.arc(s[0], s[1], START_R, 0, Math.PI * 2); ctx.fill();
-    if (state === "wait") { ctx.strokeStyle = `rgba(62,232,138,${1 - pulse})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(s[0], s[1], START_R + 12 * pulse, 0, Math.PI * 2); ctx.stroke(); }
-    ctx.fillStyle = "#ffcc33"; ctx.beginPath(); ctx.arc(g[0], g[1], GOAL_R, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#111"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("START", s[0], s[1]); ctx.fillText("GOAL", g[0], g[1]);
+    // 大きなSTART円（ここにペンを置くとスタート）
+    const ready = (state === "idle" && now > lockUntil) || state === "wait";
+    const pulse = .5 + .5 * Math.sin(now / 220);
+    if (ready) { ctx.strokeStyle = `rgba(62,232,138,${.8 - .6 * pulse})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(s[0], s[1], START_R + 8 + 10 * pulse, 0, Math.PI * 2); ctx.stroke(); }
+    const grd = ctx.createRadialGradient(s[0] - 18, s[1] - 18, 6, s[0], s[1], START_R);
+    grd.addColorStop(0, ready ? "#8dffbf" : "#5a8a70"); grd.addColorStop(1, ready ? "#13b862" : "#2c5a42");
+    circle(s[0], s[1], START_R, grd);
+    ctx.fillStyle = ready ? "#052a14" : "rgba(5,42,20,.7)"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = "900 24px sans-serif"; ctx.fillText("START", s[0], s[1] - (state === "idle" ? 8 : 0));
+    if (state === "idle") { ctx.font = "bold 12px sans-serif"; ctx.fillText(ready ? "ペンを置いて" : "準備中…", s[0], s[1] + 18); }
+
+    circle(g[0], g[1], GOAL_R, "#ffcc33");
+    ctx.fillStyle = "#111"; ctx.font = "900 17px sans-serif"; ctx.fillText("GOAL", g[0], g[1]);
 
     for (let i = 1; i < trail.length; i++) {
       ctx.strokeStyle = `rgba(0,110,255,${i / trail.length})`; ctx.lineWidth = 3; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(trail[i-1][0], trail[i-1][1]); ctx.lineTo(trail[i][0], trail[i][1]); ctx.stroke();
     }
     if (pen && state === "play") {
-      ctx.shadowColor = "#3aa0ff"; ctx.shadowBlur = 14; ctx.fillStyle = "#0a66ff";
-      ctx.beginPath(); ctx.arc(pen[0], pen[1], 5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.shadowColor = "#3aa0ff"; ctx.shadowBlur = 14; circle(pen[0], pen[1], 5, "#0a66ff"); ctx.shadowBlur = 0;
     }
     if (hitPos && now - hitAt < 800) {
       const k = (now - hitAt) / 800;
@@ -425,7 +458,7 @@
   }
 
   function loop(now) {
-    if (state === "wait" || state === "play" || state === "miss") {
+    if (state === "play" || state === "miss" || state === "wait") {
       elapsed = (now - tStart) / 1000;
       hTime.textContent = cfg.limit ? Math.max(0, cfg.limit - elapsed).toFixed(2) : elapsed.toFixed(2);
       if (state === "play" && !liftTimer) msg(`到達 ${Math.round(maxProg * 100)}%`);

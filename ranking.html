@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ランキング – ロボット イライラ棒</title>
+<style>
+  :root { --bg:#0d1017; --panel:#171c2a; --accent:#ffcc33; --danger:#ff4d4d; --ok:#3ee88a; --text:#f2f5ff; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text); overflow:hidden;
+    font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif; }
+  #wrap { position:fixed; inset:0; display:flex; flex-direction:column; padding:2vh 2.5vw; gap:2vh; }
+  header { display:flex; align-items:center; justify-content:space-between; }
+  h1 { margin:0; font-size:clamp(22px,4vw,46px); color:var(--accent); text-shadow:0 0 18px rgba(255,204,51,.4); }
+  #conn { font-size:clamp(12px,1.6vw,16px); opacity:.8; }
+  main { flex:1; display:grid; grid-template-columns:1.35fr 1fr; gap:2.5vw; min-height:0; }
+  .panel { background:var(--panel); border-radius:20px; padding:2vh 2vw; min-height:0; display:flex; flex-direction:column; }
+  ol { list-style:none; margin:0; padding:0; flex:1; display:flex; flex-direction:column; justify-content:flex-start; }
+  li { flex:0 0 9.6%; }
+  li { display:flex; align-items:center; gap:1.5vw; font-size:clamp(18px,3.1vh,40px); font-weight:800;
+    padding:.6vh 1vw; border-radius:12px; font-variant-numeric:tabular-nums; transition:background .4s; }
+  li .rk { width:3.4em; color:#9aa3bd; }
+  li:nth-child(1) .rk { color:#ffd84a; } li:nth-child(2) .rk { color:#d7dde8; } li:nth-child(3) .rk { color:#e0a26a; }
+  li .no { flex:1; }
+  li .v { text-align:right; }
+  li .v.out { color:#ff8a8a; font-size:.85em; }
+  li.new { background:rgba(255,204,51,.25); animation:glow 1.2s ease-in-out 3; }
+  @keyframes glow { 50% { background:rgba(255,204,51,.55); } }
+  .empty { margin:auto; opacity:.6; font-size:22px; }
+  #side { display:flex; flex-direction:column; gap:2vh; }
+  #now { text-align:center; justify-content:center; flex:1; }
+  #nowLabel { font-size:clamp(16px,2.6vh,30px); opacity:.8; }
+  #nowNo { font-size:clamp(40px,10vh,110px); font-weight:900; line-height:1.1; }
+  #nowTime { font-size:clamp(28px,7vh,80px); font-weight:900; font-variant-numeric:tabular-nums; color:var(--accent); }
+  #last { text-align:center; justify-content:center; flex:1; }
+  #lastLabel { font-size:clamp(14px,2.2vh,26px); opacity:.8; }
+  #lastBig { font-size:clamp(32px,7vh,80px); font-weight:900; }
+  #lastSub { font-size:clamp(18px,3.4vh,40px); font-weight:800; }
+  #last.win #lastBig { color:var(--ok); } #last.out #lastBig { color:var(--danger); }
+  #stats { text-align:center; font-size:clamp(16px,2.6vh,30px); font-weight:800; }
+  #help { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--bg); padding:24px; text-align:center; line-height:1.8; font-size:18px; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div id="help" class="hidden">
+  <div>ランキング画面を開くには、ゲームのiPadで<br>⚙︎設定 →「ランキングを別のタブレットに表示」のQRコードを読み取ってください。</div>
+</div>
+<div id="wrap">
+  <header><h1>🏆 ロボット イライラ棒 ランキング</h1><div id="conn">接続中…</div></header>
+  <main>
+    <div class="panel"><ol id="list"><div class="empty">まだ挑戦者はいません</div></ol></div>
+    <div id="side">
+      <div class="panel" id="now"><div id="nowLabel">次の挑戦者</div><div id="nowNo">-</div><div id="nowTime"></div></div>
+      <div class="panel hidden" id="last"><div id="lastLabel">直前の結果</div><div id="lastBig"></div><div id="lastSub"></div></div>
+      <div id="stats"></div>
+    </div>
+  </main>
+</div>
+<script>
+(() => {
+  const RELAY = "https://ntfy.sh/";
+  const room = new URLSearchParams(location.search).get("room");
+  const $ = id => document.getElementById(id);
+  if (!room) { $("help").classList.remove("hidden"); return; }
+
+  let cur = null, playStart = 0, lastShownNo = null;
+
+  function render(d) {
+    if (!d || d.v !== 1) return;
+    const prev = cur; cur = d;
+    // ランキング
+    const L = $("list");
+    L.innerHTML = d.top.length ? d.top.map((r, i) =>
+      `<li class="${d.last && r.no === d.last.no && d.state === "result" ? "new" : ""}">` +
+      `<span class="rk">${i + 1}位</span><span class="no">No.${r.no}</span>` +
+      `<span class="v ${r.ok ? "" : "out"}">${r.ok ? r.time.toFixed(2) + " 秒" : "到達 " + r.prog + "%"}</span></li>`).join("")
+      : `<div class="empty">まだ挑戦者はいません</div>`;
+    // 現在の状態
+    if (d.state === "play") {
+      $("nowLabel").textContent = "挑戦中！";
+      if (!prev || prev.state !== "play" || prev.no !== d.no) playStart = performance.now();
+    } else $("nowLabel").textContent = "次の挑戦者";
+    $("nowNo").textContent = "No." + d.no;
+    if (d.state !== "play") $("nowTime").textContent = "";
+    // 直前の結果
+    if (d.last) {
+      const l = d.last, el = $("last");
+      el.classList.remove("hidden"); el.className = "panel " + (l.ok ? "win" : "out");
+      $("lastLabel").textContent = `直前の結果　No.${l.no}`;
+      $("lastBig").textContent = l.ok ? `CLEAR ${l.time.toFixed(2)}秒` : (l.why === "時間切れ" ? "TIME UP" : "OUT") + ` 到達${l.prog}%`;
+      $("lastSub").textContent = `${d.total}人中 ${l.rank}位${l.rank === 1 && d.total > 1 && l.ok ? "　🎉新記録！" : ""}`;
+    } else $("last").classList.add("hidden");
+    $("stats").textContent = d.total ? `挑戦 ${d.total}人　クリア ${d.clears}人` : "";
+  }
+
+  // 挑戦中のタイム表示（このタブレットの時計で計る目安）
+  (function tick() {
+    if (cur && cur.state === "play") {
+      const t = (performance.now() - playStart) / 1000;
+      $("nowTime").textContent = (cur.limit ? Math.max(0, cur.limit - t) : t).toFixed(1) + " 秒";
+    }
+    requestAnimationFrame(tick);
+  })();
+
+  function parse(m) { try { return JSON.parse(m); } catch (e) { return null; } }
+  const conn = (s, ok) => { $("conn").textContent = s; $("conn").style.color = ok ? "#3ee88a" : "#ff8a8a"; };
+
+  // 最新の状態を取得（直近12時間）
+  fetch(`${RELAY}${room}/json?poll=1&since=12h`).then(r => r.text()).then(t => {
+    const msgs = t.trim().split("\n").map(parse).filter(m => m && m.event === "message");
+    if (msgs.length) render(parse(msgs[msgs.length - 1].message));
+  }).catch(() => {});
+
+  // リアルタイム受信
+  let es = null;
+  function connect() {
+    try {
+      es = new EventSource(`${RELAY}${room}/sse`);
+      es.onopen = () => conn("● 接続中", true);
+      es.onmessage = ev => { const m = parse(ev.data); if (m && m.event === "message") render(parse(m.message)); };
+      es.onerror = () => conn("● 再接続中…", false);
+    } catch (e) { conn("● 接続できません", false); }
+  }
+  connect();
+  // 画面が復帰したとき念のため最新を取り直す
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && es && es.readyState === 2) connect(); });
+})();
+</script>
+</body>
+</html>
