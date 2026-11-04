@@ -124,7 +124,8 @@
     set(k, v) { try { localStorage.setItem("irb_" + k, JSON.stringify(v)); } catch (e) {} }
   };
   const newRoom = () => "irb-" + Array.from(crypto.getRandomValues(new Uint8Array(9)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
-  const cfg = Object.assign({ w:36, n:4, g:150, limit:0, mode:"end", show:5, pen:true, guide:false, sound:true, share:true, room:"" }, store.get("cfg", {}));
+  const cfg = Object.assign({ w:36, n:4, g:150, limit:0, mode:"end", show:5, pen:false, guide:false, sound:true, share:true, room:"" }, store.get("cfg", {}));
+  if (!cfg.fingerOk) { cfg.pen = false; cfg.fingerOk = true; store.set("cfg", cfg); }   // 指でも遊べるのを標準に
   if (!cfg.room) { cfg.room = newRoom(); store.set("cfg", cfg); }
   let records = store.get("records", []);
   let nextNo = store.get("nextNo", 1);
