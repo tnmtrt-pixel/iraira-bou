@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>イライラ棒 – タッチペンでなぞれ！</title>
+<style>
+  :root { --bg:#10131a; --panel:#1b2030; --accent:#ffcc33; --danger:#ff4d4d; --ok:#4dff9a; --text:#eef2ff; }
+  * { box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text);
+    font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif; overflow:hidden; overscroll-behavior:none; }
+  #wrap { position:fixed; inset:0; display:flex; flex-direction:column; }
+  #hud { display:flex; gap:14px; align-items:center; justify-content:space-between; padding:8px 14px;
+    background:var(--panel); font-weight:700; font-size:16px; flex:0 0 auto; }
+  #hud .left { display:flex; gap:16px; align-items:center; }
+  #msg { color:var(--accent); }
+  #stageArea { flex:1 1 auto; position:relative; touch-action:none; }
+  canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; display:block; }
+  .btn { background:var(--accent); color:#222; border:none; border-radius:12px; padding:12px 22px;
+    font-size:18px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .btn.sub { background:#3a4260; color:var(--text); }
+  .btn.small { padding:6px 12px; font-size:14px; border-radius:8px; }
+  .overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(10,12,18,.88); z-index:5; padding:16px; }
+  .overlay.hidden { display:none; }
+  .card { background:var(--panel); border-radius:18px; padding:24px 26px; max-width:620px; width:100%;
+    text-align:center; box-shadow:0 10px 40px rgba(0,0,0,.5); max-height:100%; overflow:auto; }
+  h1 { margin:0 0 6px; font-size:40px; letter-spacing:2px; color:var(--accent);
+    text-shadow:0 0 18px rgba(255,204,51,.5); }
+  h2 { margin:0 0 12px; font-size:28px; }
+  p { line-height:1.6; margin:8px 0; }
+  .rules { text-align:left; background:#141927; border-radius:12px; padding:10px 16px; font-size:15px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin:14px 0; }
+  .stageBtn { background:#262d44; color:var(--text); border:2px solid #3a4260; border-radius:12px;
+    padding:12px 8px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .stageBtn small { display:block; font-weight:400; font-size:12px; opacity:.8; margin-top:4px; }
+  .stageBtn.locked { opacity:.35; cursor:not-allowed; }
+  .stageBtn.cleared { border-color:var(--ok); }
+  .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+  label.opt { display:inline-flex; gap:6px; align-items:center; font-size:14px; margin:4px 8px; }
+  .big { font-size:30px; font-weight:800; }
+  .set { display:flex; align-items:center; gap:10px; margin:8px 0; }
+  .set span { width:110px; flex:0 0 auto; }
+  .set input { flex:1; }
+  .set b { width:70px; text-align:right; }
+  .log { text-align:left; font-size:13px; background:#141927; border-radius:10px; padding:8px 12px;
+    max-height:180px; overflow:auto; font-family:ui-monospace,Menlo,monospace; }
+  #flash { position:absolute; inset:0; z-index:4; pointer-events:none; display:flex;
+    align-items:center; justify-content:center; }
+  #flash.hidden { display:none; }
+  #flash.out { background:rgba(255,30,30,.55); }
+  #flash.win { background:rgba(40,220,120,.5); }
+  #flashText { font-size:min(16vw,140px); font-weight:900; color:#fff; text-align:center; line-height:1.1;
+    text-shadow:0 0 30px rgba(0,0,0,.7), 0 4px 0 #000; }
+  #flashText small { display:block; font-size:.35em; }
+  body.robot #hud { font-size:clamp(18px,3.2vw,30px); padding:10px 18px; }
+  #hTime { font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="left">
+      <span id="hStage">STAGE -</span>
+      <span>⏱ <span id="hTime">0.00</span>秒</span>
+      <span>💥 <span id="hMiss">0</span></span>
+    </div>
+    <span id="msg"></span>
+    <button class="btn small sub" id="menuBtn">メニュー</button>
+  </div>
+  <div id="stageArea">
+    <canvas id="cv"></canvas>
+
+    <div class="overlay" id="titleOv">
+      <div class="card">
+        <h1>イライラ棒</h1>
+        <p>狭い通路をペンでなぞって、ゴールまで運べ！</p>
+        <div class="rules">
+          ① 緑の <b>START</b> にペンを置くとスタート<br>
+          ② 通路からはみ出したら<b style="color:var(--danger)">アウト</b><br>
+          ③ 途中でペンを離してもアウト<br>
+          ④ 黄色の <b>GOAL</b> にたどり着けばクリア！
+        </div>
+        <button class="btn" id="robotBtn" style="width:100%;margin-top:12px">🤖 ロボット挑戦モード（ジグザグ）</button>
+        <div class="grid" id="stageGrid"></div>
+        <div>
+          <label class="opt"><input type="checkbox" id="optLift" checked> ペンを離したらアウト</label>
+          <label class="opt"><input type="checkbox" id="optSound" checked> 効果音</label>
+          <label class="opt"><input type="checkbox" id="optPalm" checked> 手のひら誤タッチ防止</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="robotOv">
+      <div class="card">
+        <h2>🤖 ロボット挑戦モード</h2>
+        <p style="font-size:14px;opacity:.85">ジグザグコースをロボットハンドのApple Pencilで攻略。カメラ越しでも見やすい高コントラスト表示です。</p>
+        <div class="rules">
+          <div class="set"><span>通路の幅</span><input type="range" id="rbW" min="16" max="80" step="2"><b id="rbWv"></b></div>
+          <div class="set"><span>折り返し数</span><input type="range" id="rbN" min="2" max="8" step="1"><b id="rbNv"></b></div>
+          <div class="set"><span>ペン浮き猶予</span><input type="range" id="rbG" min="0" max="600" step="50"><b id="rbGv"></b></div>
+          <label class="opt"><input type="checkbox" id="rbPen"> Apple Pencilのみ受け付ける</label>
+          <label class="opt"><input type="checkbox" id="rbGuide"> 中央ガイド線を表示</label>
+        </div>
+        <div class="row">
+          <button class="btn" id="rbStart">スタート！</button>
+          <button class="btn sub" id="rbBack">戻る</button>
+        </div>
+        <h3 style="margin:18px 0 6px;font-size:17px">挑戦記録</h3>
+        <div id="rbLog" class="log"></div>
+        <div class="row">
+          <button class="btn small sub" id="rbCopy">記録をCSVでコピー</button>
+          <button class="btn small sub" id="rbClear">記録を消す</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="flash" class="hidden"><div id="flashText"></div></div>
+
+    <div class="overlay hidden" id="resultOv">
+      <div class="card">
+        <h2 id="rTitle"></h2>
+        <p class="big" id="rTime"></p>
+        <p id="rDetail"></p>
+        <div class="row">
+          <button class="btn" id="rNext">次のステージ</button>
+          <button class="btn sub" id="rRetry">もう一回</button>
+          <button class="btn sub" id="rMenu">ステージ選択</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ===== 論理座標 800x500 =====
+  const W = 800, H = 500;
+
+  // ===== ステージ定義 =====
+  function wave(x0, x1, yc, amp, waves, n) {
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      pts.push([x0 + (x1 - x0) * t, yc + amp * Math.sin(t * Math.PI * 2 * waves)]);
+    }
+    return pts;
+  }
+  function spiral(cx, cy, r0, r1, turns, sx, n) {
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, th = t * turns * Math.PI * 2;
+      const r = r0 + (r1 - r0) * t;
+      pts.push([cx + Math.cos(th) * r * sx, cy + Math.sin(th) * r]);
+    }
+    return pts;
+  }
+
+  const STAGES = [
+    { name:"ウォーミングアップ", width:46,
+      path:[[60,250],[200,250],[260,150],[400,150],[460,350],[600,350],[660,250],[740,250]] },
+    { name:"ジグザグ", width:36,
+      path:[[60,70],[190,70],[190,430],[330,430],[330,70],[470,70],[470,430],[610,430],[610,250],[740,250]] },
+    { name:"なみなみ", width:30,
+      path:wave(60,740,250,160,2.5,160) },
+    { name:"うずまき", width:28,
+      path:spiral(400,250,225,35,2,1.45,260) },
+    { name:"動く障害物", width:34,
+      path:[[60,420],[60,80],[300,80],[300,420],[540,420],[540,80],[740,80]],
+      obstacles:[
+        {x1:5,y1:250,x2:115,y2:250,r:11,spd:1.6,ph:0},
+        {x1:220,y1:25,x2:220,y2:135,r:11,spd:2.0,ph:1},
+        {x1:245,y1:250,x2:355,y2:250,r:12,spd:2.2,ph:0},
+        {x1:420,y1:365,x2:420,y2:475,r:12,spd:2.6,ph:2},
+        {x1:485,y1:250,x2:595,y2:250,r:12,spd:2.4,ph:0.5},
+        {x1:650,y1:25,x2:650,y2:135,r:12,spd:3.0,ph:1.3},
+      ] },
+    { name:"せまき門", width:20,
+      path:[[50,460],[160,460],[160,330],[60,330],[60,200],[180,200],[180,60],[330,60],[330,250],
+            [250,250],[250,420],[420,420],[420,140],[520,140],[520,440],[640,440],[640,60],[750,60]] },
+    { name:"地獄のなみ", width:22,
+      path:wave(50,750,250,190,4,260),
+      obstacles:[
+        {x1:225,y1:40,x2:225,y2:460,r:10,spd:1.3,ph:0},
+        {x1:400,y1:460,x2:400,y2:40,r:10,spd:1.6,ph:1},
+        {x1:575,y1:40,x2:575,y2:460,r:10,spd:1.9,ph:2},
+      ] },
+  ];
+  const START_R = 26, GOAL_R = 26;
+
+  // ロボット用ジグザグコース生成（ステージ2の拡張版）
+  function makeZig(n, w) {
+    const top = 60, bot = 440, xa = 170, xb = 630;
+    const sp = (xb - xa) / (n - 1);
+    w = Math.min(w, sp - 26);
+    const path = [[60, top]]; let y = top;
+    for (let i = 0; i < n; i++) {
+      const x = xa + sp * i;
+      path.push([x, y]); y = (y === top) ? bot : top; path.push([x, y]);
+    }
+    path.push([740, y]);
+    return { name: `ジグザグ ${n}折・幅${Math.round(w)}`, width: w, path, robot: true, n };
+  }
+  function pathLen(path) { let s = 0; for (let i = 0; i < path.length-1; i++) s += Math.hypot(path[i+1][0]-path[i][0], path[i+1][1]-path[i][1]); return s; }
+  // 進行度（0〜1）: 最も近い通路上の位置までの道のり
+  function progressAt(x, y, path, total) {
+    let best = Infinity, at = 0, cum = 0;
+    for (let i = 0; i < path.length-1; i++) {
+      const [ax, ay] = path[i], [bx, by] = path[i+1];
+      const dx = bx-ax, dy = by-ay, L = Math.hypot(dx, dy);
+      let t = L ? ((x-ax)*dx + (y-ay)*dy) / (L*L) : 0; t = Math.max(0, Math.min(1, t));
+      const d = Math.hypot(ax+dx*t-x, ay+dy*t-y);
+      if (d < best - 0.5) { best = d; at = cum + L*t; }
+      cum += L;
+    }
+    return at / total;
+  }
+
+  // ===== 保存（使えなくても動く） =====
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("iraira_"+k); return v==null ? d : JSON.parse(v); } catch(e){ return d; } },
+    set(k, v) { try { localStorage.setItem("iraira_"+k, JSON.stringify(v)); } catch(e){} }
+  };
+  let unlocked = store.get("unlocked", 1);
+  let best = store.get("best", {});
+
+  // ===== 要素 =====
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  const area = document.getElementById("stageArea");
+  const $ = id => document.getElementById(id);
+  const titleOv = $("titleOv"), resultOv = $("resultOv");
+  const optLift = $("optLift"), optSound = $("optSound"), optPalm = $("optPalm");
+  optLift.checked = store.get("optLift", true);
+  optSound.checked = store.get("optSound", true);
+  optPalm.checked = store.get("optPalm", true);
+  [["optLift",optLift],["optSound",optSound],["optPalm",optPalm]].forEach(([k,el]) =>
+    el.addEventListener("change", () => store.set(k, el.checked)));
+
+  // ===== 画面スケーリング =====
+  let scale = 1, offX = 0, offY = 0, dpr = 1;
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    const r = area.getBoundingClientRect();
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    scale = Math.min(r.width / W, r.height / H);
+    offX = (r.width - W * scale) / 2; offY = (r.height - H * scale) / 2;
+  }
+  window.addEventListener("resize", resize);
+
+  // ===== 音 =====
+  let actx = null;
+  function beep(freq, dur, type="square", vol=0.15) {
+    if (!optSound.checked) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+      o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
+    } catch(e){}
+  }
+  function buzz() { beep(90, 0.5, "sawtooth", 0.25); beep(140, 0.4, "square", 0.12);
+    try { navigator.vibrate && navigator.vibrate(200); } catch(e){} }
+  function fanfare() { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.18,"triangle",0.2), i*120)); }
+
+  // ===== 幾何 =====
+  function distSeg(px, py, ax, ay, bx, by) {
+    const dx = bx-ax, dy = by-ay, l2 = dx*dx+dy*dy;
+    let t = l2 ? ((px-ax)*dx + (py-ay)*dy) / l2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const qx = ax + dx*t - px, qy = ay + dy*t - py;
+    return Math.sqrt(qx*qx + qy*qy);
+  }
+  function distPath(px, py, path) {
+    let m = Infinity;
+    for (let i = 0; i < path.length-1; i++) {
+      const d = distSeg(px, py, path[i][0], path[i][1], path[i+1][0], path[i+1][1]);
+      if (d < m) m = d;
+    }
+    return m;
+  }
+  function obstaclePos(o, t) {
+    const k = (Math.sin(t * o.spd + o.ph) + 1) / 2;
+    return [o.x1 + (o.x2-o.x1)*k, o.y1 + (o.y2-o.y1)*k];
+  }
+
+  // ===== ゲーム状態 =====
+  let stageIdx = 0, stage = null;
+  let state = "menu"; // menu | ready | playing | dead | clear
+  let tStart = 0, elapsed = 0, misses = 0, deadAt = 0, deadPos = null;
+  let trail = [], pen = null, activeId = null, sawPen = false;
+  let clock = 0;
+  let robotMode = false, liftTimer = null, maxProg = 0, totalLen = 1;
+
+  // ===== ロボット設定 =====
+  const rb = {
+    w: store.get("rbW", 36), n: store.get("rbN", 4), g: store.get("rbG", 150),
+    pen: store.get("rbPen", true), guide: store.get("rbGuide", false)
+  };
+  let rbLog = store.get("rbLog", []);
+  const rbW = $("rbW"), rbN = $("rbN"), rbG = $("rbG"), rbPen = $("rbPen"), rbGuide = $("rbGuide");
+  rbW.value = rb.w; rbN.value = rb.n; rbG.value = rb.g; rbPen.checked = rb.pen; rbGuide.checked = rb.guide;
+  function syncRb() {
+    rb.w = +rbW.value; rb.n = +rbN.value; rb.g = +rbG.value; rb.pen = rbPen.checked; rb.guide = rbGuide.checked;
+    const eff = makeZig(rb.n, rb.w).width;
+    $("rbWv").textContent = Math.round(eff) + (eff < rb.w ? "※" : "");
+    $("rbNv").textContent = rb.n + "回";
+    $("rbGv").textContent = rb.g ? rb.g + "ms" : "なし";
+    store.set("rbW", rb.w); store.set("rbN", rb.n); store.set("rbG", rb.g); store.set("rbPen", rb.pen); store.set("rbGuide", rb.guide);
+  }
+  [rbW, rbN, rbG, rbPen, rbGuide].forEach(el => el.addEventListener("input", syncRb));
+  function renderLog() {
+    const el = $("rbLog");
+    if (!rbLog.length) { el.textContent = "まだ記録はありません"; return; }
+    el.innerHTML = rbLog.slice().reverse().map((r, i) =>
+      `${String(rbLog.length - i).padStart(3," ")}. ${r.at} 幅${r.w} ${r.n}折 ` +
+      (r.ok ? `<b style="color:var(--ok)">CLEAR ${r.time.toFixed(2)}秒</b>` : `<span style="color:var(--danger)">OUT ${r.prog}%</span> (${r.time.toFixed(1)}秒・${r.why})`)
+    ).join("<br>");
+  }
+  function addLog(ok, why) {
+    const d = new Date();
+    rbLog.push({ at: `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`,
+      w: Math.round(stage.width), n: stage.n, ok, time: elapsed, prog: Math.round(maxProg*100), why: why || "" });
+    if (rbLog.length > 300) rbLog.shift();
+    store.set("rbLog", rbLog);
+  }
+  function openRobot() {
+    robotMode = true; document.body.classList.add("robot"); state = "menu";
+    titleOv.classList.add("hidden"); resultOv.classList.add("hidden"); $("robotOv").classList.remove("hidden");
+    syncRb(); renderLog(); setMsg("");
+  }
+  $("robotBtn").onclick = openRobot;
+  $("rbBack").onclick = () => { robotMode = false; document.body.classList.remove("robot"); $("robotOv").classList.add("hidden"); buildMenu(); titleOv.classList.remove("hidden"); };
+  $("rbStart").onclick = () => {
+    $("robotOv").classList.add("hidden");
+    stage = makeZig(rb.n, rb.w); misses = 0;
+    $("hStage").textContent = `🤖 ${stage.name}`;
+    resetRun();
+  };
+  $("rbCopy").onclick = async () => {
+    const csv = "日時,幅,折り返し,結果,秒,到達%,理由\n" +
+      rbLog.map(r => [r.at, r.w, r.n, r.ok ? "CLEAR" : "OUT", r.time.toFixed(2), r.prog, r.why].join(",")).join("\n");
+    try { await navigator.clipboard.writeText(csv); $("rbCopy").textContent = "コピーしました！"; }
+    catch (e) { $("rbCopy").textContent = "コピーできませんでした"; }
+    setTimeout(() => $("rbCopy").textContent = "記録をCSVでコピー", 1500);
+  };
+  let clearArm = false;
+  $("rbClear").onclick = () => {
+    if (!clearArm) { clearArm = true; $("rbClear").textContent = "もう一度押すと消去"; setTimeout(() => { clearArm = false; $("rbClear").textContent = "記録を消す"; }, 2500); return; }
+    rbLog = []; store.set("rbLog", rbLog); renderLog(); clearArm = false; $("rbClear").textContent = "記録を消す";
+  };
+
+  // 大きな結果表示（カメラ越しでも見える）
+  let flashTimer = null;
+  function showFlash(kind, html, ms) {
+    const f = $("flash"); f.className = kind; $("flashText").innerHTML = html;
+    clearTimeout(flashTimer); flashTimer = setTimeout(() => f.className = "hidden", ms);
+  }
+
+  function setMsg(s, color) { $("msg").textContent = s; $("msg").style.color = color || "var(--accent)"; }
+
+  function buildMenu() {
+    const g = $("stageGrid"); g.innerHTML = "";
+    STAGES.forEach((s, i) => {
+      const b = document.createElement("button");
+      const locked = i+1 > unlocked;
+      b.className = "stageBtn" + (locked ? " locked" : "") + (best[i] != null ? " cleared" : "");
+      b.innerHTML = `${locked ? "🔒 " : ""}STAGE ${i+1}<small>${s.name}</small>` +
+        `<small>${best[i] != null ? "ベスト " + best[i].toFixed(2) + "秒" : (locked ? "前をクリアで解放" : "未クリア")}</small>`;
+      if (!locked) b.onclick = () => startStage(i);
+      g.appendChild(b);
+    });
+  }
+
+  function startStage(i) {
+    stageIdx = i; stage = STAGES[i]; misses = 0;
+    titleOv.classList.add("hidden"); resultOv.classList.add("hidden");
+    $("hStage").textContent = `STAGE ${i+1}「${stage.name}」`;
+    resetRun();
+  }
+  function resetRun() {
+    state = "ready"; elapsed = 0; trail = []; pen = null; activeId = null; deadPos = null;
+    clearTimeout(liftTimer); liftTimer = null; maxProg = 0; totalLen = pathLen(stage.path);
+    $("hTime").textContent = "0.00"; $("hMiss").textContent = misses;
+    setMsg("STARTにペンを置こう");
+  }
+
+  function fail(x, y, why) {
+    if (state !== "playing") return;
+    clearTimeout(liftTimer); liftTimer = null;
+    state = "dead"; misses++; deadAt = performance.now(); deadPos = [x, y];
+    $("hMiss").textContent = misses;
+    setMsg(why, "var(--danger)"); buzz();
+    if (robotMode) {
+      addLog(false, why.replace("！", ""));
+      showFlash("out", `OUT<small>${why}　到達 ${Math.round(maxProg*100)}%</small>`, 1600);
+    }
+    setTimeout(() => { if (state === "dead") resetRun(); }, robotMode ? 1800 : 1100);
+  }
+  function clear() {
+    clearTimeout(liftTimer); liftTimer = null;
+    state = "clear"; fanfare();
+    const t = elapsed;
+    if (robotMode) {
+      maxProg = 1; addLog(true);
+      setMsg("CLEAR!", "var(--ok)");
+      showFlash("win", `CLEAR!<small>${t.toFixed(2)} 秒</small>`, 2500);
+      setTimeout(() => {
+        $("rTitle").textContent = "🤖 ロボット クリア！";
+        $("rTime").textContent = t.toFixed(2) + " 秒";
+        $("rDetail").innerHTML = `${stage.name}　ミス ${misses} 回`;
+        $("rNext").style.display = "none";
+        resultOv.classList.remove("hidden");
+      }, 1500);
+      return;
+    }
+    let rec = "";
+    if (best[stageIdx] == null || t < best[stageIdx]) { best[stageIdx] = t; store.set("best", best); rec = "🎉 ベスト記録更新！"; }
+    if (stageIdx + 2 > unlocked && stageIdx + 1 < STAGES.length) { unlocked = stageIdx + 2; store.set("unlocked", unlocked); }
+    setMsg("CLEAR!", "var(--ok)");
+    setTimeout(() => {
+      $("rTitle").textContent = `STAGE ${stageIdx+1} クリア！`;
+      $("rTime").textContent = t.toFixed(2) + " 秒";
+      $("rDetail").innerHTML = `ミス ${misses} 回　ベスト ${best[stageIdx].toFixed(2)} 秒<br>${rec}`;
+      $("rNext").style.display = stageIdx + 1 < STAGES.length ? "" : "none";
+      if (stageIdx + 1 >= STAGES.length) $("rDetail").innerHTML += "<br>全ステージ制覇！おめでとう！";
+      resultOv.classList.remove("hidden");
+    }, 700);
+  }
+
+  // 1点を判定
+  function checkPoint(x, y) {
+    const half = stage.width / 2;
+    if (distPath(x, y, stage.path) > half) { fail(x, y, "壁に当たった！"); return false; }
+    const pr = progressAt(x, y, stage.path, totalLen); if (pr > maxProg) maxProg = pr;
+    if (stage.obstacles) {
+      for (const o of stage.obstacles) {
+        const [ox, oy] = obstaclePos(o, clock);
+        if (Math.hypot(x-ox, y-oy) < o.r + 2) { fail(x, y, "障害物に当たった！"); return false; }
+      }
+    }
+    const g = stage.path[stage.path.length-1];
+    if (Math.hypot(x-g[0], y-g[1]) < GOAL_R * 0.8) { clear(); return false; }
+    return true;
+  }
+  // 前回位置から細かく補間して判定（すり抜け防止）
+  function moveTo(x, y) {
+    if (!pen) { pen = [x, y]; return; }
+    const [px, py] = pen;
+    const d = Math.hypot(x-px, y-py), steps = Math.max(1, Math.ceil(d / 2));
+    for (let i = 1; i <= steps; i++) {
+      const qx = px + (x-px)*i/steps, qy = py + (y-py)*i/steps;
+      if (!checkPoint(qx, qy)) { pen = [qx, qy]; return; }
+    }
+    pen = [x, y];
+    trail.push([x, y]); if (trail.length > 60) trail.shift();
+  }
+
+  // ===== 入力 =====
+  function toLogical(e) {
+    const r = cv.getBoundingClientRect();
+    return [(e.clientX - r.left - offX) / scale, (e.clientY - r.top - offY) / scale];
+  }
+  function ignoreTouch(e) {
+    if (robotMode && rb.pen) return e.pointerType !== "pen";
+    return optPalm.checked && sawPen && e.pointerType === "touch";
+  }
+
+  cv.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    if (e.pointerType === "pen") sawPen = true;
+    if (ignoreTouch(e)) return;
+    // 猶予時間中にペンが戻ってきた → 続行（離れていた間の移動も壁判定する）
+    if (state === "playing" && liftTimer && activeId === null) {
+      clearTimeout(liftTimer); liftTimer = null;
+      activeId = e.pointerId;
+      try { cv.setPointerCapture(e.pointerId); } catch(_){}
+      const [x, y] = toLogical(e); moveTo(x, y);
+      if (state === "playing") setMsg("慎重に…！");
+      return;
+    }
+    if (state !== "ready" || activeId !== null) return;
+    const [x, y] = toLogical(e), s = stage.path[0];
+    if (Math.hypot(x-s[0], y-s[1]) <= START_R) {
+      activeId = e.pointerId;
+      try { cv.setPointerCapture(e.pointerId); } catch(_){}
+      state = "playing"; tStart = performance.now(); pen = [x, y]; trail = [[x, y]];
+      setMsg("慎重に…！"); beep(660, 0.08, "triangle", 0.15);
+    } else {
+      setMsg("緑のSTARTから始めよう");
+    }
+  }, { passive:false });
+
+  cv.addEventListener("pointermove", e => {
+    if (e.pointerId !== activeId || state !== "playing") return;
+    e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of (evs.length ? evs : [e])) {
+      const [x, y] = toLogical(ev);
+      moveTo(x, y);
+      if (state !== "playing") break;
+    }
+  }, { passive:false });
+
+  function onUp(e) {
+    if (e.pointerId !== activeId) return;
+    activeId = null;
+    if (state === "playing") {
+      if (robotMode) {
+        if (rb.g > 0) {
+          setMsg("ペンが浮いた！", "var(--danger)");
+          liftTimer = setTimeout(() => { liftTimer = null; fail(pen[0], pen[1], "ペンが離れた！"); }, rb.g);
+        } else fail(pen[0], pen[1], "ペンが離れた！");
+      }
+      else if (optLift.checked) fail(pen[0], pen[1], "ペンが離れた！");
+      else { state = "ready"; setMsg("STARTからやり直し"); }
+    }
+  }
+  cv.addEventListener("pointerup", onUp);
+  cv.addEventListener("pointercancel", onUp);
+  document.addEventListener("touchmove", e => e.preventDefault(), { passive:false });
+  document.addEventListener("gesturestart", e => e.preventDefault());
+
+  // ボタン
+  $("menuBtn").onclick = () => { if (robotMode) { clearTimeout(liftTimer); liftTimer = null; openRobot(); return; } state = "menu"; buildMenu(); resultOv.classList.add("hidden"); titleOv.classList.remove("hidden"); setMsg(""); };
+  $("rMenu").onclick = $("menuBtn").onclick;
+  $("rRetry").onclick = () => { if (robotMode) { resultOv.classList.add("hidden"); misses = 0; resetRun(); } else startStage(stageIdx); };
+  $("rNext").onclick = () => startStage(stageIdx + 1);
+
+  // ===== 描画 =====
+  function strokePath(path, w, color) {
+    ctx.beginPath(); ctx.moveTo(path[0][0], path[0][1]);
+    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i][0], path[i][1]);
+    ctx.lineWidth = w; ctx.strokeStyle = color; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
+  }
+  function draw() {
+    const now = performance.now();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#10131a"; ctx.fillRect(0, 0, cv.width, cv.height);
+    if (!stage) return;
+    ctx.setTransform(dpr*scale, 0, 0, dpr*scale, dpr*offX, dpr*offY);
+
+    // 壁（ボード）
+    const dead = state === "dead";
+    const flash = dead && Math.floor((now - deadAt) / 90) % 2 === 0;
+    ctx.fillStyle = flash ? "#7a1a1a" : "#3b2433";
+    ctx.fillRect(0, 0, W, H);
+    // ストライプ模様
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.clip();
+    ctx.strokeStyle = "rgba(255,90,90,0.10)"; ctx.lineWidth = 10;
+    for (let x = -H; x < W; x += 28) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+H,H); ctx.stroke(); }
+    ctx.restore();
+
+    // 通路（縁取り→本体）
+    if (stage.robot) {
+      strokePath(stage.path, stage.width + 10, "#ff2a2a");
+      strokePath(stage.path, stage.width, "#f4f4f0");
+      if (rb.guide) {
+        ctx.setLineDash([10, 8]); strokePath(stage.path, 2, "#7a8aa0"); ctx.setLineDash([]);
+      }
+      // 到達済みの部分を薄く塗る
+      if (maxProg > 0 && state !== "ready") {
+        let need = maxProg * totalLen; const done = [stage.path[0]];
+        for (let i = 0; i < stage.path.length-1 && need > 0; i++) {
+          const [ax, ay] = stage.path[i], [bx, by] = stage.path[i+1], L = Math.hypot(bx-ax, by-ay);
+          const t = Math.min(1, need / L); done.push([ax+(bx-ax)*t, ay+(by-ay)*t]); need -= L;
+        }
+        strokePath(done, stage.width * 0.5, "rgba(80,200,255,0.25)");
+      }
+    } else {
+      strokePath(stage.path, stage.width + 6, "#ff6b6b");
+      strokePath(stage.path, stage.width, "#1a1f2e");
+      strokePath(stage.path, 2, "rgba(255,255,255,0.08)");
+    }
+
+    // START / GOAL
+    const s = stage.path[0], g = stage.path[stage.path.length-1];
+    const pulse = 0.6 + 0.4 * Math.sin(now / 250);
+    ctx.fillStyle = `rgba(77,255,154,${state==="ready" ? pulse : 0.5})`;
+    ctx.beginPath(); ctx.arc(s[0], s[1], START_R, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(255,204,51,0.9)";
+    ctx.beginPath(); ctx.arc(g[0], g[1], GOAL_R, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#111"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("START", s[0], s[1]); ctx.fillText("GOAL", g[0], g[1]);
+
+    // 障害物
+    if (stage.obstacles) {
+      for (const o of stage.obstacles) {
+        const [ox, oy] = obstaclePos(o, clock);
+        ctx.save(); ctx.translate(ox, oy); ctx.rotate(now / 120);
+        ctx.fillStyle = "#ff3b3b";
+        ctx.beginPath();
+        for (let k = 0; k < 16; k++) {
+          const a = k * Math.PI / 8, r = k % 2 ? o.r * 0.55 : o.r * 1.15;
+          ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#ffd0d0"; ctx.beginPath(); ctx.arc(0,0,o.r*0.3,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // 軌跡
+    if (trail.length > 1) {
+      for (let i = 1; i < trail.length; i++) {
+        ctx.strokeStyle = stage.robot ? `rgba(0,110,255,${i / trail.length})` : `rgba(120,220,255,${i / trail.length * 0.8})`;
+        ctx.lineWidth = 3; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(trail[i-1][0], trail[i-1][1]); ctx.lineTo(trail[i][0], trail[i][1]); ctx.stroke();
+      }
+    }
+    // ペン先
+    if (pen && (state === "playing" || state === "clear")) {
+      ctx.shadowColor = "#7fdcff"; ctx.shadowBlur = 14;
+      ctx.fillStyle = "#cff3ff"; ctx.beginPath(); ctx.arc(pen[0], pen[1], 5, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    // 衝突地点
+    if (dead && deadPos) {
+      const k = Math.min(1, (now - deadAt) / 400);
+      ctx.strokeStyle = `rgba(255,255,120,${1-k})`; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(deadPos[0], deadPos[1], 8 + 40*k, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.font = "bold 22px sans-serif";
+      ctx.fillText("ビリッ！", deadPos[0], deadPos[1] - 24);
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    clock += dt;
+    if (state === "playing") {
+      elapsed = (now - tStart) / 1000;
+      $("hTime").textContent = elapsed.toFixed(2);
+      if (robotMode && !liftTimer) setMsg(`到達 ${Math.round(maxProg*100)}%`);
+      // ペンが止まっていても障害物に当たる
+      if (stage.obstacles && pen) checkPoint(pen[0], pen[1]);
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  resize(); buildMenu();
+  stage = STAGES[0];
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
