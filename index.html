@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>ロボット イライラ棒</title>
-<script src="qrcode.js?v=20261105d"></script>
+<script src="qrcode.js?v=20261106a"></script>
 <style>
   :root { --bg:#0d1017; --panel:#191e2c; --accent:#ffcc33; --danger:#ff3b3b; --ok:#3ee88a; --text:#f2f5ff; }
   * { box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
@@ -76,13 +76,12 @@
 
     <div class="hidden" id="settings">
       <div class="card">
-        <div class="cardHead"><h2>⚙︎ 設定（スタッフ用）<small>ver 11/05d</small></h2><button id="sX">✕ 閉じる</button></div>
+        <div class="cardHead"><h2>⚙︎ 設定（スタッフ用）<small>ver 11/06a</small></h2><button id="sX">✕ 閉じる</button></div>
         <div class="cardBody">
           <div>
             <h3>🎮 コースとルール</h3>
             <div class="set"><span>通路の幅</span><input type="range" id="sW" min="16" max="80" step="2"><b id="sWv"></b></div>
             <div class="set"><span>折り返し数</span><input type="range" id="sN" min="2" max="8" step="1"><b id="sNv"></b></div>
-            <div class="set"><span>ペン浮き猶予</span><input type="range" id="sG" min="0" max="600" step="50"><b id="sGv"></b></div>
             <div class="set"><span>制限時間</span><select id="sL">
               <option value="0">なし</option><option value="30">30秒</option><option value="60">60秒</option>
               <option value="90">90秒</option><option value="120">120秒</option><option value="180">180秒</option></select></div>
@@ -207,7 +206,7 @@
   // ---------- 状態 ----------
   // idle: START待ち / play: なぞり中 / miss: 続行モードのミス演出 / wait: 続行モードでSTARTに戻るのを待つ / result: 結果表示
   let state = "idle", curNo = 0, tStart = 0, elapsed = 0, maxProg = 0, miss = 0, lockUntil = 0;
-  let pen = null, trail = [], activeId = null, liftTimer = null, hitPos = null, hitAt = 0, lastRec = null;
+  let pen = null, trail = [], activeId = null, lifted = false, pendingId = null, hitPos = null, hitAt = 0, lastRec = null;
   const hTime = $("hTime"), hMsg = $("hMsg");
   function msg(s, c) { hMsg.textContent = s; hMsg.style.color = c || "var(--accent)"; }
 
@@ -242,7 +241,7 @@
   // ---------- 進行 ----------
   function showIdle() {
     state = "idle"; pen = null; trail = []; hitPos = null; maxProg = 0;
-    clearTimeout(liftTimer); liftTimer = null;
+    lifted = false; pendingId = null;
     $("result").classList.add("hidden");
     hTime.textContent = cfg.limit ? cfg.limit.toFixed(2) : "0.00";
     $("hNo").textContent = `No.${nextNo}`;
@@ -263,7 +262,7 @@
     state = "play"; pen = [x, y]; trail = [pen]; hitPos = null; msg("");
   }
   function finish(ok, why) {
-    clearTimeout(liftTimer); liftTimer = null;
+    lifted = false; pendingId = null;
     elapsed = (performance.now() - tStart) / 1000;
     if (cfg.limit && !ok && why === "時間切れ") elapsed = cfg.limit;
     hTime.textContent = elapsed.toFixed(2);
@@ -285,7 +284,7 @@
     if (state !== "play") return;
     hitPos = [x, y]; hitAt = performance.now();
     if (cfg.mode === "cont") {
-      miss++; state = "miss"; buzz(); clearTimeout(liftTimer); liftTimer = null; activeId = null;
+      miss++; state = "miss"; buzz(); lifted = false; pendingId = null; activeId = null;
       const f = $("flash"); f.textContent = why; f.classList.remove("hidden");
       setTimeout(() => { f.classList.add("hidden"); if (state === "miss") { state = "wait"; pen = null; trail = []; msg("STARTに戻って再開", "var(--danger)"); } }, 900);
     } else finish(false, why);
@@ -314,31 +313,39 @@
     e.preventDefault();
     if (!accept(e) || activeId !== null) return;
     const [x, y] = toL(e);
-    if (state === "play" && liftTimer) {           // 猶予内にペンが戻った
-      clearTimeout(liftTimer); liftTimer = null; activeId = e.pointerId;
-      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-      moveTo(x, y); return;
-    }
+    if (state === "play" && lifted) { relanding(x, y, e.pointerId); return; }   // ペンが浮いた後に再び接地
     if (!inStart(x, y)) return;
     if (state === "idle" && performance.now() > lockUntil) begin(x, y, e.pointerId);   // ← START円に触れた瞬間に計測開始
     else if (state === "wait") grab(x, y, e.pointerId);                                 // 続行モードの再開
   }, { passive: false });
 
+  // ペンが浮いた後の再接地：壁の上なら当たり、通路の中ならそこから続行。
+  // ただし今までの到達地点より大きく先（コースを飛び越した位置）は、正しい位置に来るまで無視する。
+  const JUMP = 140;   // 浮いている間に進んでよい道のり（コース座標）
+  function relanding(x, y, id) {
+    if (!inStart(x, y) && distPath(x, y) > course.width / 2) { pendingId = null; lifted = false; hit(x, y, "壁に当たった"); return; }
+    if (progressAt(x, y) * course.len > maxProg * course.len + JUMP) { pendingId = id; msg("続きの場所から！", "var(--danger)"); return; }
+    pendingId = null; lifted = false; activeId = id;
+    try { cv.setPointerCapture(id); } catch (_) {}
+    pen = [x, y]; trail = [pen]; msg("");
+    checkPoint(x, y);
+  }
+
   cv.addEventListener("pointermove", e => {
+    if (e.pointerId === pendingId && state === "play") { e.preventDefault(); relanding(...toL(e), e.pointerId); return; }
     if (e.pointerId !== activeId || state !== "play") return;
     e.preventDefault();
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
     for (const ev of (evs.length ? evs : [e])) { moveTo(...toL(ev)); if (state !== "play") break; }
   }, { passive: false });
 
+  // ペンが離れてもアウトにしない（タイムは進み続ける）
   function up(e) {
+    if (e.pointerId === pendingId) pendingId = null;
     if (e.pointerId !== activeId) return;
     activeId = null;
     if (state !== "play") return;
-    if (cfg.g > 0) {
-      msg("ペンが浮いた！", "var(--danger)");
-      liftTimer = setTimeout(() => { liftTimer = null; hit(pen[0], pen[1], "ペンが離れた"); }, cfg.g);
-    } else hit(pen[0], pen[1], "ペンが離れた");
+    lifted = true; msg("ペン浮き中", "#aab3cc");
   }
   cv.addEventListener("pointerup", up);
   cv.addEventListener("pointercancel", up);
@@ -349,11 +356,11 @@
 
   // ---------- 設定 ----------
   const F = id => $(id);
-  const sW = F("sW"), sN = F("sN"), sG = F("sG"), sL = F("sL"), sM = F("sM"), sR = F("sR"),
+  const sW = F("sW"), sN = F("sN"), sL = F("sL"), sM = F("sM"), sR = F("sR"),
         sPen = F("sPen"), sGuide = F("sGuide"), sSound = F("sSound"), sShare = F("sShare");
   const rankURL = () => new URL("ranking.html?room=" + cfg.room, location.href).href;
   function loadForm() {
-    sW.value = cfg.w; sN.value = cfg.n; sG.value = cfg.g; sL.value = cfg.limit; sM.value = cfg.mode; sR.value = cfg.show;
+    sW.value = cfg.w; sN.value = cfg.n; sL.value = cfg.limit; sM.value = cfg.mode; sR.value = cfg.show;
     sPen.checked = cfg.pen; sGuide.checked = cfg.guide; sSound.checked = cfg.sound; sShare.checked = cfg.share;
     labels(); showShare();
   }
@@ -361,14 +368,13 @@
     const eff = makeZig(+sN.value, +sW.value).width;
     $("sWv").textContent = Math.round(eff) + (eff < +sW.value ? "※" : "");
     $("sNv").textContent = sN.value + "回";
-    $("sGv").textContent = +sG.value ? sG.value + "ms" : "なし";
   }
   function saveForm() {
-    Object.assign(cfg, { w:+sW.value, n:+sN.value, g:+sG.value, limit:+sL.value, mode:sM.value, show:+sR.value,
+    Object.assign(cfg, { w:+sW.value, n:+sN.value, limit:+sL.value, mode:sM.value, show:+sR.value,
       pen:sPen.checked, guide:sGuide.checked, sound:sSound.checked, share:sShare.checked });
     store.set("cfg", cfg); course = makeZig(cfg.n, cfg.w); labels(); updShareStat();
   }
-  [sW, sN, sG, sL, sM, sR, sPen, sGuide, sSound, sShare].forEach(el => el.addEventListener("input", saveForm));
+  [sW, sN, sL, sM, sR, sPen, sGuide, sSound, sShare].forEach(el => el.addEventListener("input", saveForm));
 
     function showShare() {
     const url = rankURL();
@@ -470,7 +476,7 @@
     if (state === "play" || state === "miss" || state === "wait") {
       elapsed = (now - tStart) / 1000;
       hTime.textContent = cfg.limit ? Math.max(0, cfg.limit - elapsed).toFixed(2) : elapsed.toFixed(2);
-      if (state === "play" && !liftTimer) msg(`到達 ${Math.round(maxProg * 100)}%`);
+      if (state === "play" && !lifted && pendingId === null) msg(`到達 ${Math.round(maxProg * 100)}%`);
       if (cfg.limit && elapsed >= cfg.limit) { state = "play"; finish(false, "時間切れ"); }
     }
     draw(now);
