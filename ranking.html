@@ -41,6 +41,39 @@
   #stats { text-align:center; font-size:clamp(16px,2.6vh,30px); font-weight:800; }
   #help { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--bg); padding:24px; text-align:center; line-height:1.8; font-size:18px; }
   .hidden { display:none !important; }
+  /* 学校HPリンク・スマホ用QR */
+  .hp { display:inline-flex; align-items:center; gap:6px; background:#1f6fd1; color:#fff; text-decoration:none; font-weight:800;
+    border-radius:999px; padding:8px 16px; font-size:clamp(13px,1.6vw,17px); white-space:nowrap; }
+  .hp:active { filter:brightness(.85); }
+  .hright { display:flex; align-items:center; gap:14px; }
+  #phoneQR { display:flex; align-items:center; gap:12px; background:var(--panel); border-radius:16px; padding:10px 14px; }
+  #phoneQR .q { background:#fff; border-radius:8px; padding:5px; width:clamp(80px,13vh,130px); height:clamp(80px,13vh,130px); flex:0 0 auto; }
+  #phoneQR .q svg { width:100%; height:100%; display:block; }
+  #phoneQR .t { font-size:clamp(13px,2vh,20px); font-weight:800; line-height:1.4; }
+  #phoneQR .t small { display:block; font-weight:400; opacity:.75; font-size:.8em; }
+  footer { display:none; }
+
+  /* ---- スマホ（縦長・小さい画面）用 ---- */
+  @media (max-width:760px), (orientation:portrait) and (max-width:900px) {
+    html,body { overflow:auto; height:auto; }
+    #wrap { position:static; padding:12px; gap:12px; min-height:100vh; }
+    header { flex-direction:column; align-items:flex-start; gap:6px; }
+    h1 { font-size:22px; }
+    .hright .hp { display:none; }
+    main { display:flex; flex-direction:column; gap:12px; }
+    #side { order:-1; gap:10px; }
+    .panel { padding:12px 14px; border-radius:14px; }
+    #now, #last { flex:none; }
+    #nowLabel { font-size:15px; } #nowNo { font-size:40px; } #nowTime { font-size:30px; }
+    #lastLabel { font-size:14px; } #lastBig { font-size:28px; } #lastSub { font-size:17px; }
+    #stats { font-size:16px; }
+    ol { flex:none; }
+    li { flex:none; font-size:18px; padding:9px 8px; gap:10px; }
+    #phoneQR { display:none; }
+    footer { display:block; text-align:center; padding:6px 0 16px; }
+    footer .hp { font-size:16px; padding:12px 22px; }
+    footer p { font-size:12px; opacity:.6; margin:10px 0 0; }
+  }
 </style>
 </head>
 <body>
@@ -48,16 +81,22 @@
   <div>ランキング画面を開くには、ゲームのiPadで<br>⚙︎設定 →「ランキングを別のタブレットに表示」のQRコードを読み取ってください。</div>
 </div>
 <div id="wrap">
-  <header><h1>🏆 ロボット イライラ棒 ランキング</h1><div id="conn">接続中…</div></header>
+  <header><h1>🏆 ロボット イライラ棒 ランキング</h1><div class="hright"><a class="hp" href="https://www.kobe-c.ed.jp/koka-hs/" target="_blank" rel="noopener">🏫 神戸工科高校HP</a><div id="conn">接続中…</div></div></header>
   <main>
     <div class="panel"><ol id="list"><div class="empty">まだ挑戦者はいません</div></ol></div>
     <div id="side">
       <div class="panel" id="now"><div id="nowLabel">次の挑戦者</div><div id="nowNo">-</div><div id="nowTime"></div></div>
       <div class="panel hidden" id="last"><div id="lastLabel">直前の結果</div><div id="lastBig"></div><div id="lastSub"></div></div>
       <div id="stats"></div>
+      <div id="phoneQR"><div class="q" id="pq"></div><div class="t">📱 自分のスマホでも見られます<small>QRを読み取るとこのランキングが開きます</small></div></div>
     </div>
   </main>
+  <footer>
+    <a class="hp" href="https://www.kobe-c.ed.jp/koka-hs/" target="_blank" rel="noopener">🏫 神戸市立神戸工科高等学校 HPへ</a>
+    <p>ロボット イライラ棒 – 神戸工科高校</p>
+  </footer>
 </div>
+<script src="qrcode.js?v=20261108a"></script>
 <script>
 (() => {
   const RELAY = "https://ntfy.sh/";
@@ -66,6 +105,10 @@
   if (!room) { $("help").classList.remove("hidden"); return; }
 
   let cur = null, playStart = 0, lastShownNo = null;
+
+  // 来場者が自分のスマホで開けるよう、このページのQRを表示
+  try { const q = qrcode(0, "M"); q.addData(location.href); q.make(); $("pq").innerHTML = q.createSvgTag(4, 2); }
+  catch (e) { $("phoneQR").classList.add("hidden"); }
 
   function render(d) {
     if (!d || d.v !== 1) return;
