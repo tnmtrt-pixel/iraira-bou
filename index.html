@@ -76,7 +76,7 @@
 
     <div class="hidden" id="settings">
       <div class="card">
-        <div class="cardHead"><h2>⚙︎ 設定（スタッフ用）<small>ver 11/08a</small></h2><button id="sX">✕ 閉じる</button></div>
+        <div class="cardHead"><h2>⚙︎ 設定（スタッフ用）<small>ver 11/18a</small></h2><button id="sX">✕ 閉じる</button></div>
         <div class="cardBody">
           <div>
             <h3>🎮 コースとルール</h3>
@@ -227,6 +227,9 @@
       v: 1, state, no: state === "idle" ? nextNo : curNo, limit: cfg.limit,
       top: sorted.slice(0, 10).map(r => ({ no: r.no, ok: r.ok, time: r.time, prog: r.prog })),
       total: records.length, clears: records.filter(r => r.ok).length,
+      // 全員の順位（スマホで自分の順位を見る用）："番号:タイム" か "番号:-到達%" を順位順に並べた文字列
+      all: (() => { let t = sorted.map(r => r.no + ":" + (r.ok ? r.time.toFixed(2) : "-" + r.prog)).join(",");
+                    if (t.length > 2800) t = t.slice(0, t.lastIndexOf(",", 2800)); return t; })(),   // 中継の1通4KB制限に収める（約300人分）
       last: lastRec ? { no: lastRec.no, ok: lastRec.ok, time: lastRec.time, prog: lastRec.prog, why: lastRec.why, rank: rankOf(lastRec) } : null
     });
     fetch(RELAY + cfg.room, { method: "POST", body })

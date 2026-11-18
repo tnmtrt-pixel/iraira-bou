@@ -52,6 +52,15 @@
   #phoneQR .t { font-size:clamp(13px,2vh,20px); font-weight:800; line-height:1.4; }
   #phoneQR .t small { display:block; font-weight:400; opacity:.75; font-size:.8em; }
   footer { display:none; }
+  #mine { display:none; text-align:center; background:linear-gradient(135deg,#3a2f0a,#1d1a10); border:2px solid var(--accent); }
+  #mine.show { display:flex; }
+  #mineLabel { font-size:clamp(14px,2.2vh,22px); opacity:.85; }
+  #mineRank { font-size:clamp(34px,8vh,72px); font-weight:900; color:var(--accent); line-height:1.15; }
+  #mineSub { font-size:clamp(16px,2.8vh,28px); font-weight:800; }
+  li.me { background:rgba(255,204,51,.3); outline:2px solid var(--accent); }
+  #find { display:none; gap:8px; justify-content:center; align-items:center; }
+  #find input { width:7em; font-size:18px; padding:8px 10px; border-radius:10px; border:none; text-align:center; }
+  #find button { font-size:16px; font-weight:800; padding:9px 14px; border:none; border-radius:10px; background:var(--accent); color:#222; font-family:inherit; }
 
   /* ---- スマホ（縦長・小さい画面）用 ---- */
   @media (max-width:760px), (orientation:portrait) and (max-width:900px) {
@@ -70,6 +79,8 @@
     ol { flex:none; }
     li { flex:none; font-size:18px; padding:9px 8px; gap:10px; }
     #phoneQR { display:none; }
+    #find { display:flex; }
+    #mineRank { font-size:44px; } #mineSub { font-size:18px; } #mineLabel { font-size:14px; }
     footer { display:block; text-align:center; padding:6px 0 16px; }
     footer .hp { font-size:16px; padding:12px 22px; }
     footer p { font-size:12px; opacity:.6; margin:10px 0 0; }
@@ -85,10 +96,12 @@
   <main>
     <div class="panel"><ol id="list"><div class="empty">まだ挑戦者はいません</div></ol></div>
     <div id="side">
+      <div class="panel" id="mine"><div id="mineLabel">あなたの記録</div><div id="mineRank"></div><div id="mineSub"></div></div>
+      <div id="find"><input id="findNo" type="number" inputmode="numeric" placeholder="挑戦番号"><button id="findBtn">自分の順位を見る</button></div>
       <div class="panel" id="now"><div id="nowLabel">次の挑戦者</div><div id="nowNo">-</div><div id="nowTime"></div></div>
       <div class="panel hidden" id="last"><div id="lastLabel">直前の結果</div><div id="lastBig"></div><div id="lastSub"></div></div>
       <div id="stats"></div>
-      <div id="phoneQR"><div class="q" id="pq"></div><div class="t">📱 自分のスマホでも見られます<small>QRを読み取るとこのランキングが開きます</small></div></div>
+      <div id="phoneQR"><div class="q" id="pq"></div><div class="t" id="pqText">📱 自分のスマホでも見られます<small>QRを読み取るとこのランキングが開きます</small></div></div>
     </div>
   </main>
   <footer>
@@ -96,7 +109,7 @@
     <p>ロボット イライラ棒 – 神戸工科高校</p>
   </footer>
 </div>
-<script src="qrcode.js?v=20261108a"></script>
+<script src="qrcode.js?v=20261118a"></script>
 <script>
 (() => {
   const RELAY = "https://ntfy.sh/";
@@ -104,11 +117,39 @@
   const $ = id => document.getElementById(id);
   if (!room) { $("help").classList.remove("hidden"); return; }
 
-  let cur = null, playStart = 0, lastShownNo = null;
+  let cur = null, playStart = 0;
+  let myNo = parseInt(new URLSearchParams(location.search).get("no"), 10) || null;   // スマホで開いた人の挑戦番号
+  const baseURL = new URL("ranking.html?room=" + encodeURIComponent(room), location.href).href;
 
-  // 来場者が自分のスマホで開けるよう、このページのQRを表示
-  try { const q = qrcode(0, "M"); q.addData(location.href); q.make(); $("pq").innerHTML = q.createSvgTag(4, 2); }
-  catch (e) { $("phoneQR").classList.add("hidden"); }
+  // タブレットに出すQR：直前に挑戦した人の番号入りURL（読み取るとその人の順位が出る）
+  let qrFor = undefined;
+  function drawQR(no) {
+    if (no === qrFor) return; qrFor = no;
+    const url = no ? baseURL + "&no=" + no : baseURL;
+    try { const q = qrcode(0, "M"); q.addData(url); q.make(); $("pq").innerHTML = q.createSvgTag(4, 2); }
+    catch (e) { $("phoneQR").classList.add("hidden"); return; }
+    $("pqText").innerHTML = no
+      ? `📱 No.${no} さん、自分の記録はこちら<small>スマホで読み取ると、あとからでも自分の順位が見られます</small>`
+      : `📱 自分のスマホでも見られます<small>QRを読み取るとこのランキングが開きます</small>`;
+  }
+  drawQR(null);
+
+  // 番号を入れて自分の順位を見る（スマホ）
+  $("findBtn").onclick = () => {
+    const n = parseInt($("findNo").value, 10); if (!n) return;
+    myNo = n; try { history.replaceState(null, "", baseURL + "&no=" + n); } catch (e) {}
+    if (cur) render(cur);
+  };
+
+  function myRecord(d) {
+    if (!myNo || !d.all) return null;
+    const list = d.all.split(",");
+    for (let i = 0; i < list.length; i++) {
+      const [no, v] = list[i].split(":");
+      if (+no === myNo) return { rank: i + 1, ok: v[0] !== "-", val: v[0] === "-" ? v.slice(1) : v };
+    }
+    return null;
+  }
 
   function render(d) {
     if (!d || d.v !== 1) return;
@@ -116,7 +157,7 @@
     // ランキング
     const L = $("list");
     L.innerHTML = d.top.length ? d.top.map((r, i) =>
-      `<li class="${d.last && r.no === d.last.no && d.state === "result" ? "new" : ""}">` +
+      `<li class="${r.no === myNo ? "me" : ""} ${d.last && r.no === d.last.no && d.state === "result" ? "new" : ""}">` +
       `<span class="rk">${i + 1}位</span><span class="no">No.${r.no}</span>` +
       `<span class="v ${r.ok ? "" : "out"}">${r.ok ? r.time.toFixed(2) + " 秒" : "到達 " + r.prog + "%"}</span></li>`).join("")
       : `<div class="empty">まだ挑戦者はいません</div>`;
@@ -136,6 +177,24 @@
       $("lastSub").textContent = `${d.total}人中 ${l.rank}位${l.rank === 1 && d.total > 1 && l.ok ? "　🎉新記録！" : ""}`;
     } else $("last").classList.add("hidden");
     $("stats").textContent = d.total ? `挑戦 ${d.total}人　クリア ${d.clears}人` : "";
+    // 自分の記録（番号つきURLで開いたとき）
+    const mine = $("mine");
+    if (myNo) {
+      const m = myRecord(d);
+      mine.classList.add("show");
+      $("mineLabel").textContent = `あなたの記録　No.${myNo}`;
+      if (m) {
+        $("mineRank").textContent = `${d.total}人中 ${m.rank}位`;
+        $("mineSub").textContent = m.ok ? `CLEAR ${m.val} 秒` : `到達 ${m.val}%`;
+      } else if (d.state === "play" && d.no === myNo) {
+        $("mineRank").textContent = "挑戦中！"; $("mineSub").textContent = "がんばれ！";
+      } else {
+        $("mineRank").textContent = "記録なし"; $("mineSub").textContent = "番号を確認してください";
+      }
+      $("findNo").value = myNo;
+    } else mine.classList.remove("show");
+    // QRは直前に終わった人の番号入りに切り替える
+    if (!myNo) drawQR(d.last ? d.last.no : null);
   }
 
   // 挑戦中のタイム表示（このタブレットの時計で計る目安）
